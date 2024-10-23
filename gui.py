@@ -6,7 +6,7 @@ import yaml, os
 from juliacall import Main as jl
 from juliacall import Pkg as jlPkg
 
-jlPkg.add(url="https://github.com/f-tommy/SeaGapR")
+# jlPkg.add(url="https://github.com/f-tommy/SeaGapR")
 jl.seval("using SeaGapR")
 jl.seval('const SeaGap = SeaGapR')
 
