@@ -1,0 +1,5 @@
+FROM julia:1.11.1
+
+RUN julia -e 'using Pkg;Pkg.add(Pkg.PackageSpec(;name="GDAL_jll", version="301.900"));Pkg.add(url="https://github.com/f-tommy/SeaGap.git");using SeaGap'
+
+CMD ["julia"]

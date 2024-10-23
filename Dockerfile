@@ -1,15 +1,21 @@
 # Use an official Python runtime as a parent image
 #FROM julia:1.11.1
 FROM python:3.11-slim AS base
-# Set environment variables to ensure Python outputs are flushed immediately
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+
 
 # Set the working directory for your app
 WORKDIR /app
 
+# Set environment variables to ensure Python outputs are flushed immediately
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+
 ## Install system dependencies for Python and Julia
-RUN apt-get update && apt-get install -y --no-install-recommends git curl && rm -rf /var/lib/apt/lists/
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git curl && \
+    apt-get install -y xcb-cursor0 &&\
+    rm -rf /var/lib/apt/lists/
 
 COPY requirements.txt .
 COPY customDialogs.py .
