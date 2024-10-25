@@ -3,13 +3,6 @@ from os.path import exists, join
 
 import yaml, os
 
-from juliacall import Main as jl
-from juliacall import Pkg as jlPkg
-
-# jlPkg.add(url="https://github.com/f-tommy/SeaGapR")
-jl.seval("using SeaGapR")
-jl.seval('const SeaGap = SeaGapR')
-
 from PySide6.QtWidgets import QMainWindow, QWidget, QApplication, QTabWidget, QVBoxLayout, QPushButton, QToolBar, QStatusBar, QFileDialog
 from PySide6.QtGui import QIcon, QAction
 from customDialogs import DenoiseDialog, StaticArrayDialog, StaticArrayGradDialog, StaticArrayMCMCGradVDialog, \
@@ -135,13 +128,13 @@ class MainWindow(QMainWindow):
         self.ttres_Button.clicked.connect(self.run_ttres_dlg)
         self.plotting_tab_layout.addWidget(self.ttres_Button)
 
-        self.track_Button = QPushButton("Track")
-        self.track_Button.clicked.connect(self.show_track_window)
-        self.plotting_tab_layout.addWidget(self.track_Button)
+        # self.track_Button = QPushButton("Track")
+        # self.track_Button.clicked.connect(self.show_track_window)
+        # self.plotting_tab_layout.addWidget(self.track_Button)
 
-        self.timetrack_Button = QPushButton("Time track")
-        self.timetrack_Button.clicked.connect(self.show_timetrack_window)
-        self.plotting_tab_layout.addWidget(self.timetrack_Button)
+        # self.timetrack_Button = QPushButton("Time track")
+        # self.timetrack_Button.clicked.connect(self.show_timetrack_window)
+        # self.plotting_tab_layout.addWidget(self.timetrack_Button)
 
         self.mcmcgradvplot_Button = QPushButton("MCMC Grad V plot")
         self.mcmcgradvplot_Button.clicked.connect(self.run_mcmcgradvplot_dlg)
@@ -213,27 +206,38 @@ class MainWindow(QMainWindow):
 
             self.base_path = dict_prj["base_path"]
             if self.base_path != "" :
-                os.chdir(self.base_path)
+                os.chdir(os.path.normpath(self.base_path))
                 print("OK !")
                 # self.ANT_file_explorer.default_path = self.base_path
                 # self.PXP_file_explorer.default_path = self.base_path
                 # self.SSP_file_explorer.default_path = self.base_path
                 # self.OBS_file_explorer.default_path = self.base_path
+            self.base_path = os.path.normpath(self.base_path)
 
-            self.ANT_path = dict_prj["ANT_path"]
-            self.ANT_file_explorer.line_edit.setText(self.ANT_path)
+            self.ANT_file_explorer.line_edit.setText(dict_prj["ANT_path"])
+            self.ANT_path = os.path.normpath(dict_prj["ANT_path"])
 
-            self.PXP_path = dict_prj["PXP_path"]
-            self.PXP_file_explorer.line_edit.setText(self.PXP_path)
+            self.PXP_file_explorer.line_edit.setText(dict_prj["PXP_path"])
+            self.PXP_path = os.path.normpath(dict_prj["PXP_path"])
 
-            self.SSP_path = dict_prj["SSP_path"]
-            self.SSP_file_explorer.line_edit.setText(self.SSP_path)
+            self.SSP_file_explorer.line_edit.setText(dict_prj["SSP_path"])
+            self.SSP_path = os.path.normpath(dict_prj["SSP_path"])
 
-            self.OBS_path = dict_prj["OBS_path"]
-            self.OBS_file_explorer.line_edit.setText(self.OBS_path)
+            self.OBS_file_explorer.line_edit.setText(dict_prj["OBS_path"])
+            self.OBS_path = os.path.normpath(dict_prj["OBS_path"])
 
 
-            self.proj_file_path = proj_file_path
+            # self.PXP_path = os.path.normpath(dict_prj["PXP_path"])
+            # self.PXP_file_explorer.line_edit.setText(self.PXP_path)
+            #
+            # self.SSP_path = os.path.normpath(dict_prj["SSP_path"])
+            # self.SSP_file_explorer.line_edit.setText(self.SSP_path)
+            #
+            # self.OBS_path = os.path.normpath(dict_prj["OBS_path"])
+            # self.OBS_file_explorer.line_edit.setText(self.OBS_path)
+
+
+            self.proj_file_path = os.path.normpath(proj_file_path)
 
         print("Successfully loaded '"+ os.path.basename(self.proj_file_path) +"' project file")
         self.status_bar.showMessage("Successfully loaded '"+ os.path.basename(self.proj_file_path) +"' project file")
@@ -245,28 +249,35 @@ class MainWindow(QMainWindow):
             return
         with open(self.proj_file_path, "w") as proj_file_path :
             proj_file_path.write('---\n')
-            proj_file_path.write('base_path : "'+os.path.dirname(self.proj_file_path)+'"\n')
+            proj_file_path.write('base_path : "'+os.path.dirname(self.proj_file_path).replace("\\", "/")+'"\n')
             proj_file_path.write('proj_name : "'+os.path.splitext(os.path.basename(self.proj_file_path))[0]+'"\n')
-            proj_file_path.write('ANT_path : "'+self.ANT_file_explorer.line_edit.text()+'"\n')
-            proj_file_path.write('PXP_path : "'+self.PXP_file_explorer.line_edit.text()+'"\n')
-            proj_file_path.write('SSP_path : "'+self.SSP_file_explorer.line_edit.text()+'"\n')
-            proj_file_path.write('OBS_path : "'+self.OBS_file_explorer.line_edit.text()+'"\n')
+            proj_file_path.write('ANT_path : "'+self.ANT_file_explorer.line_edit.text().replace("\\", "/")+'"\n')
+            proj_file_path.write('PXP_path : "'+self.PXP_file_explorer.line_edit.text().replace("\\", "/")+'"\n')
+            proj_file_path.write('SSP_path : "'+self.SSP_file_explorer.line_edit.text().replace("\\", "/")+'"\n')
+            proj_file_path.write('OBS_path : "'+self.OBS_file_explorer.line_edit.text().replace("\\", "/")+'"\n')
         print("Successfully saved '"+ os.path.basename(self.proj_file_path))
         self.status_bar.showMessage("Successfully saved '"+ os.path.basename(self.proj_file_path))
 
     def get_path_list(self):
-        return [self.ANT_file_explorer.line_edit.text(), self.PXP_file_explorer.line_edit.text(), self.SSP_file_explorer.line_edit.text(), self.OBS_file_explorer.line_edit.text()]
+        return [self.ANT_file_explorer.line_edit.text(), self.PXP_file_explorer.line_edit.text(), self.SSP_file_explorer.line_edit.text(), self.OBS_file_explorer.line_edit.text(), os.path.dirname(self.proj_file_path)]
 
 
 
     def run_denoise_dlg(self):
 
         l_path = self.get_path_list()
-        if not is_path_list_valid(l_path):
+
+        if not is_path_list_valid(l_path[:-1]):
             self.status_bar.showMessage("Paths not valid")
             print("Paths not valid")
             return
-        denoise_dlg = DenoiseDialog(l_path, jl)
+
+        if not is_path_list_valid([l_path[-1]]):
+            self.status_bar.showMessage("No project selected")
+            print("No project selected")
+            return
+
+        denoise_dlg = DenoiseDialog(l_path)
         denoise_dlg.exec()
 
 
@@ -286,7 +297,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Paths not valid")
             print("Paths not valid")
             return
-        static_array_dlg = StaticArrayDialog(l_path, jl)
+        static_array_dlg = StaticArrayDialog(l_path)
         static_array_dlg.exec()
 
 
@@ -296,32 +307,32 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Paths not valid")
             print("Paths not valid")
             return
-        ttres_dlg = TtresDialog(l_path, jl)
+        ttres_dlg = TtresDialog(l_path)
         ttres_dlg.exec()
 
 
     def run_mcmcgradvplot_dlg(self):
         l_path = self.get_path_list()
-        mcmcgradvplot_dlg = MCMCGradVPlotDialog(l_path, jl)
+        mcmcgradvplot_dlg = MCMCGradVPlotDialog(l_path)
         mcmcgradvplot_dlg.exec()
 
 
     def run_ntdmcmcgradvplot_dlg(self):
         l_path = self.get_path_list()
-        ntdmcmcgradvplot_dlg = NTDMCMCGradVPlotDialog(l_path, jl)
+        ntdmcmcgradvplot_dlg = NTDMCMCGradVPlotDialog(l_path)
         ntdmcmcgradvplot_dlg.exec()
 
-    def show_track_window(self):
-        l_path = self.get_path_list()
-        if not is_path_list_valid(l_path):
-            self.status_bar.showMessage("Paths not valid")
-            print("Paths not valid")
-            return
-        path_ANT, path_PXP, path_SSP, path_OBS = l_path
-        jl.SeaGap.plot_track(fn1=path_PXP, fn2=path_OBS, fno="gui_tmp/track.png")
-
-        track_plot_dlg = TrackPlotDialog()
-        track_plot_dlg.exec()
+    # def show_track_window(self):
+    #     l_path = self.get_path_list()
+    #     if not is_path_list_valid(l_path):
+    #         self.status_bar.showMessage("Paths not valid")
+    #         print("Paths not valid")
+    #         return
+    #     path_ANT, path_PXP, path_SSP, path_OBS = l_path
+    #     jl.SeaGap.plot_track(fn1=path_PXP, fn2=path_OBS, fno="gui_tmp/track.png")
+    #
+    #     track_plot_dlg = TrackPlotDialog()
+    #     track_plot_dlg.exec()
 
 
 
@@ -331,20 +342,20 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Paths not valid")
             print("Paths not valid")
             return
-        gradmap_dlg = GradmapDialog(l_path, jl)
+        gradmap_dlg = GradmapDialog(l_path)
         gradmap_dlg.exec()
 
-    def show_timetrack_window(self):
-        l_path = self.get_path_list()
-        if not is_path_list_valid(l_path):
-            self.status_bar.showMessage("Paths not valid")
-            print("Paths not valid")
-            return
-        path_ANT, path_PXP, path_SSP, path_OBS = l_path
-        jl.SeaGap.plot_timetrack(fn=path_OBS, fno="gui_tmp/time_track.png")
-
-        track_plot_dlg = TimeTrackPlotDialog()
-        track_plot_dlg.exec()
+    # def show_timetrack_window(self):
+    #     l_path = self.get_path_list()
+    #     if not is_path_list_valid(l_path):
+    #         self.status_bar.showMessage("Paths not valid")
+    #         print("Paths not valid")
+    #         return
+    #     path_ANT, path_PXP, path_SSP, path_OBS = l_path
+    #     jl.SeaGap.plot_timetrack(fn=path_OBS, fno="gui_tmp/time_track.png")
+    #
+    #     track_plot_dlg = TimeTrackPlotDialog()
+    #     track_plot_dlg.exec()
 
 
     def run_static_array_grad_dlg(self):
@@ -354,7 +365,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Paths not valid")
             print("Paths not valid")
             return
-        static_array_grad_dlg = StaticArrayGradDialog(l_path, jl)
+        static_array_grad_dlg = StaticArrayGradDialog(l_path)
         static_array_grad_dlg.exec()
 
 
@@ -365,7 +376,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Paths not valid")
             print("Paths not valid")
             return
-        static_array_mcmcgradv_dlg = StaticArrayMCMCGradVDialog(l_path, jl)
+        static_array_mcmcgradv_dlg = StaticArrayMCMCGradVDialog(l_path)
         static_array_mcmcgradv_dlg.exec()
 
 
@@ -375,7 +386,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("Paths not valid")
             print("Paths not valid")
             return
-        static_array_individual_dlg = StaticIndividualDialog(l_path, jl)
+        static_array_individual_dlg = StaticIndividualDialog(l_path)
         static_array_individual_dlg.exec()
 
 
@@ -386,7 +397,7 @@ class MainWindow(QMainWindow):
         #     self.status_bar.showMessage("Paths not valid")
         #     print("Paths not valid")
         #     return
-        histogram2d_dlg = Histogram2DGradVPlotDialog(l_path, jl)
+        histogram2d_dlg = Histogram2DGradVPlotDialog(l_path)
         histogram2d_dlg.exec()
 
 
