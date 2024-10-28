@@ -12,7 +12,7 @@ from GARPOS2SeaGap import GARPOS2SeaGap
 
 from multiprocessing import Process
 
-from customProcs import ttres_proc, static_array_proc, static_individual_proc, static_array_grad_proc
+from customProcs import ttres_proc, static_array_proc, static_individual_proc, static_array_grad_proc, static_array_mcmcgradv_proc
 
 from time import time, sleep
 
@@ -417,6 +417,7 @@ class TtresDialog(QDialog):
             self.graph_img.clear()
             self.graph_img.repaint()
 
+# TAG1
 
     def run_ttres(self):
         print("Running Ttres...")
@@ -466,7 +467,7 @@ class TtresDialog(QDialog):
 
 
 
-# TAG1
+
 
 
 
@@ -932,7 +933,7 @@ class StaticArrayGradDialog(QDialog):
 
 class StaticArrayMCMCGradVDialog(QDialog):
 
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -941,7 +942,6 @@ class StaticArrayMCMCGradVDialog(QDialog):
         self.setWindowIcon(my_icon)
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -1005,6 +1005,10 @@ class StaticArrayMCMCGradVDialog(QDialog):
         self.run_static_array_mcmcgradv_button.clicked.connect(self.run_static_array_mcmcgradv)
         self.input_layout.addWidget(self.run_static_array_mcmcgradv_button)
 
+        self.actualize_graph_button = QPushButton("Actualize Graph")
+        self.actualize_graph_button.clicked.connect(self.actualize_graph)
+        self.input_layout.addWidget(self.actualize_graph_button)
+
         self.input_layout.addWidget(self.statusbar)
 
         self.layout.addLayout(self.input_layout)
@@ -1016,23 +1020,48 @@ class StaticArrayMCMCGradVDialog(QDialog):
 
         self.layout.addLayout(self.fig_layout)
 
-        QBtn = (
-                QDialogButtonBox.Ok
-        )
+        # QBtn = (
+        #         QDialogButtonBox.Ok
+        # )
+        #
+        # self.buttonBox = QDialogButtonBox(QBtn)
+        # self.buttonBox.setDisabled(True)
+        # self.buttonBox.accepted.connect(self.accept)
 
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.setDisabled(True)
-        self.buttonBox.accepted.connect(self.accept)
-
-        self.input_layout.addWidget(self.buttonBox)
+        # self.input_layout.addWidget(self.buttonBox)
 
         self.setLayout(self.layout)
 
+    def actualize_graph(self):
+        folder_path = self.folder_selector.line_edit.text()
+        if folder_path != "" :
+            if 'static_array_mcmcgradv_resfig.png' in os.listdir(folder_path) :
+                pixmap1 = QPixmap(os.path.join(folder_path, "static_array_mcmcgradv_resfig.png"))
+                self.graph_img1.setPixmap(
+                    pixmap1.scaled(pixmap1.width() // 1.5, pixmap1.height() // 1.5, Qt.AspectRatioMode.KeepAspectRatio))
+                self.graph_img1.repaint()
+            else :
+                self.graph_img1.clear()
+                self.graph_img1.repaint()
+
+
+            if 'static_array_mcmcgradv_paramfig.png' in os.listdir(folder_path) :
+                pixmap2 = QPixmap(os.path.join(folder_path, "static_array_mcmcgradv_paramfig.png"))
+                self.graph_img2.setPixmap(
+                    pixmap2.scaled(pixmap2.width() // 1.5, pixmap2.height() // 1.5, Qt.AspectRatioMode.KeepAspectRatio))
+                self.graph_img2.repaint()
+            else :
+                self.graph_img2.clear()
+                self.graph_img2.repaint()
+
+#TAG4
+
     def run_static_array_mcmcgradv(self):
-        self.graph_img1.clear()
-        self.graph_img1.repaint()
-        self.graph_img2.clear()
-        self.graph_img2.repaint()
+        print("running static_array_mcmcgradv ...")
+        # self.graph_img1.clear()
+        # self.graph_img1.repaint()
+        # self.graph_img2.clear()
+        # self.graph_img2.repaint()
         if self.lat_selector.line_edit.text() == "" or self.TR_DEPTH_selector.line_edit.text() == "" or self.folder_selector.line_edit.text() == "" or self.dep_selector.line_edit.text() == "":
             print("Lacking static array MCMC grad V parameters")
             self.statusbar.showMessage("Lacking static array MCMC grad V parameters")
@@ -1109,38 +1138,45 @@ class StaticArrayMCMCGradVDialog(QDialog):
         nshuffle = (nloop-nburn)//5-1
 
 
-        log_path = os.path.join(folder_path, "static_array_mcmcgradv_log.out")
-        sample_path = os.path.join(folder_path, "static_array_mcmcgradv_sample.out")
-        mcmc_path = os.path.join(folder_path, "static_array_mcmcgradv_mcmc.out")
-        position_path = os.path.join(folder_path, "static_array_mcmcgradv_position.out")
-        statistics_path = os.path.join(folder_path, "static_array_mcmcgradv_statistics.out")
-        acceptance_path = os.path.join(folder_path, "static_array_mcmcgradv_acceptance.out")
-        residual_path = os.path.join(folder_path, "static_array_mcmcgradv_residual.out")
-        bspline_path = os.path.join(folder_path, "static_array_mcmcgradv_bspline.out")
-        gradient_path = os.path.join(folder_path, "static_array_mcmcgradv_gradient.out")
-        initial_path = os.path.join(folder_path, "static_array_mcmcgradv_initial.out")
-        resfig_path = os.path.join(folder_path, "static_array_mcmcgradv_resfig.png")
-        paramfig_path = os.path.join(folder_path, "static_array_mcmcgradv_paramfig.png")
+        log_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_log.out"), proj_fold).replace("\\", "/")
+        sample_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_sample.out"), proj_fold).replace("\\", "/")
+        mcmc_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_mcmc.out"), proj_fold).replace("\\", "/")
+        position_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_position.out"), proj_fold).replace("\\", "/")
+        statistics_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_statistics.out"), proj_fold).replace("\\", "/")
+        acceptance_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_acceptance.out"), proj_fold).replace("\\", "/")
+        residual_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_residual.out"), proj_fold).replace("\\", "/")
+        bspline_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_bspline.out"), proj_fold).replace("\\", "/")
+        gradient_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_gradient.out"), proj_fold).replace("\\", "/")
+        initial_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_initial.out"), proj_fold).replace("\\", "/")
+        resfig_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_resfig.png"), proj_fold).replace("\\", "/")
+        paramfig_path = os.path.relpath(os.path.join(folder_path, "static_array_mcmcgradv_paramfig.png"), proj_fold).replace("\\", "/")
 
-        self.jl.SeaGap.static_array_s(lat, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), 0.0, NPB1, NPB2, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, fno0="gui_tmp/tmp_static_array_s_log.txt",fno1="gui_tmp/tmp_static_array_s_solve.out",fno2="gui_tmp/tmp_static_array_s_position.out",fno3="gui_tmp/tmp_static_array_s_residual_sdls.out",fno4="gui_tmp/tmp_static_array_s_S-NTD.out",fno5="gui_tmp/tmp_static_array_s_ABIC.out",fno6="gui_tmp/tmp_static_array_s_gradient.out")
-        self.jl.SeaGap.make_initial_gradv(NPB1, NPB2, fn="gui_tmp/tmp_static_array_s_solve.out", fno="gui_tmp/tmp_static_array_s_initial.inp")
-        self.jl.SeaGap.static_array_mcmcgradv(lat, dep, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), NPB1, NPB2, NPB3, NPB4, gm=gm, gs=gs, dm=dm, ds=ds, rm=rm, rs=rs, nloop=nloop, nburn=nburn, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, fn5="gui_tmp/tmp_static_array_s_initial.inp", fno0=log_path, fno1=sample_path, fno2=mcmc_path, fno3=position_path, fno4=statistics_path, fno5=acceptance_path, fno6=residual_path, fno7=bspline_path, fno8=gradient_path, fno9=initial_path)
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
 
-        self.jl.SeaGap.plot_mcmcres_gradv(nshuffle=nshuffle, fn=mcmc_path, show=False, fno=resfig_path) #, fno="gui_tmp/test.png"
+        proc = Process(target=static_array_mcmcgradv_proc, args=(lat, dep, TR_DEPTH, 0.0, NPB1, NPB2, NPB3, NPB4, path_ANT, path_PXP, path_SSP, path_OBS, "gui_tmp/tmp_static_array_s_log.txt", "gui_tmp/tmp_static_array_s_solve.out", "gui_tmp/tmp_static_array_s_position.out", "gui_tmp/tmp_static_array_s_residual_sdls.out", "gui_tmp/tmp_static_array_s_S-NTD.out", "gui_tmp/tmp_static_array_s_ABIC.out", "gui_tmp/tmp_static_array_s_gradient.out", gm, dm, ds, rm, rs, nloop, nburn, log_path, sample_path, mcmc_path, position_path, statistics_path, acceptance_path, residual_path, bspline_path, gradient_path, initial_path, nshuffle, resfig_path, paramfig_path), kwargs={"proj_fold": proj_fold})
+        proc.start()
 
-        self.jl.SeaGap.plot_mcmcparam_gradv(5, nshuffle=nshuffle, fn=sample_path, show=False, fno=paramfig_path) #, fno="gui_tmp/test.png"
+        # lat, TR_DEPTH, 0.0, NPB1, NPB2, path_ANT, path_PXP, path_SSP, path_OBS, "gui_tmp/tmp_static_array_s_log.txt", "gui_tmp/tmp_static_array_s_solve.out", "gui_tmp/tmp_static_array_s_position.out", "gui_tmp/tmp_static_array_s_residual_sdls.out", "gui_tmp/tmp_static_array_s_S-NTD.out", "gui_tmp/tmp_static_array_s_ABIC.out", "gui_tmp/tmp_static_array_s_gradient.out"
 
-        pixmap1 = QPixmap(resfig_path)
-        self.graph_img1.setPixmap(
-            pixmap1.scaled(pixmap1.width() // 1, pixmap1.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
-        self.graph_img1.repaint()
+        # self.jl.SeaGap.static_array_s(lat, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), 0.0, NPB1, NPB2, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, fno0="gui_tmp/tmp_static_array_s_log.txt",fno1="gui_tmp/tmp_static_array_s_solve.out",fno2="gui_tmp/tmp_static_array_s_position.out",fno3="gui_tmp/tmp_static_array_s_residual_sdls.out",fno4="gui_tmp/tmp_static_array_s_S-NTD.out",fno5="gui_tmp/tmp_static_array_s_ABIC.out",fno6="gui_tmp/tmp_static_array_s_gradient.out")
+        # self.jl.SeaGap.make_initial_gradv(NPB1, NPB2, fn="gui_tmp/tmp_static_array_s_solve.out", fno="gui_tmp/tmp_static_array_s_initial.inp")
+        # self.jl.SeaGap.static_array_mcmcgradv(lat, dep, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), NPB1, NPB2, NPB3, NPB4, gm=gm, gs=gs, dm=dm, ds=ds, rm=rm, rs=rs, nloop=nloop, nburn=nburn, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, fn5="gui_tmp/tmp_static_array_s_initial.inp", fno0=log_path, fno1=sample_path, fno2=mcmc_path, fno3=position_path, fno4=statistics_path, fno5=acceptance_path, fno6=residual_path, fno7=bspline_path, fno8=gradient_path, fno9=initial_path)
         #
-        pixmap2 = QPixmap(paramfig_path)
-        self.graph_img2.setPixmap(
-            pixmap2.scaled(pixmap2.width() // 1, pixmap2.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
-        self.graph_img2.repaint()
+        # self.jl.SeaGap.plot_mcmcres_gradv(nshuffle=nshuffle, fn=mcmc_path, show=False, fno=resfig_path) #, fno="gui_tmp/test.png"
+        #
+        # self.jl.SeaGap.plot_mcmcparam_gradv(5, nshuffle=nshuffle, fn=sample_path, show=False, fno=paramfig_path) #, fno="gui_tmp/test.png"
 
-        self.buttonBox.setDisabled(False)
+        # pixmap1 = QPixmap(resfig_path)
+        # self.graph_img1.setPixmap(
+        #     pixmap1.scaled(pixmap1.width() // 1, pixmap1.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
+        # self.graph_img1.repaint()
+        # #
+        # pixmap2 = QPixmap(paramfig_path)
+        # self.graph_img2.setPixmap(
+        #     pixmap2.scaled(pixmap2.width() // 1, pixmap2.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
+        # self.graph_img2.repaint()
+        #
+        # self.buttonBox.setDisabled(False)
 
     def accept(self):
         try :
@@ -1251,6 +1287,8 @@ class StaticIndividualDialog(QDialog):
 
         self.setLayout(self.layout)
 
+# TAG5
+
     def run_static_individual(self):
         if self.lat_selector.line_edit.text() == "" or self.TR_DEPTH_selector.line_edit.text() == "" or self.folder_selector.line_edit.text() == "":
             print("Lacking static individual parameters")
@@ -1293,5 +1331,5 @@ class StaticIndividualDialog(QDialog):
         proc = Process(target=static_individual_proc, args=(lat, TR_DEPTH, NPB, path_ANT, path_PXP, path_SSP, path_OBS, eps, ITMAX, delta_pos, log_path, solve_path, position_path, residual_path, bspline_path), kwargs={"proj_fold":proj_fold})
         proc.start()
 
-#TAG4
+
 
