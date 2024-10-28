@@ -183,12 +183,12 @@ class MainWindow(QMainWindow):
         dlg = NewProjectDialog()
         dlg.setWindowTitle("Select new project folder")
         dlg.exec()
-        if dlg.proj_file_path != "" :
+        if dlg.proj_file_path != "" and dlg.proj_file_path != ".":
             self.load_proj(None, proj_file_path=dlg.proj_file_path)
+            print("New project '" + os.path.basename(dlg.proj_file_path) + "' created")
+            self.status_bar.showMessage("New project '" + os.path.basename(dlg.proj_file_path) + "' created")
         else :
             self.proj_file_path = ""
-        print("New project '" + os.path.basename(dlg.proj_file_path) + "' created")
-        self.status_bar.showMessage("New project '" + os.path.basename(dlg.proj_file_path) + "' created")
 
     def load_proj(self, _, proj_file_path=""):
         if proj_file_path == "" :

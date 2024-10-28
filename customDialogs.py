@@ -4,13 +4,17 @@ from customLayout import DoubleSelector, IntSelector, FolderExplorerLayout, File
 from PySide6.QtGui import QIcon, QPixmap
 import shutil, os
 from PySide6.QtCore import Qt
-import docker
+
 
 from os.path import exists, join
 
 from GARPOS2SeaGap import GARPOS2SeaGap
 
 from multiprocessing import Process
+
+from customProcs import ttres_proc, static_array_proc, static_individual_proc
+
+from time import time, sleep
 
 # jl.seval('using SeaGap')
 
@@ -364,7 +368,7 @@ class FromGARPOSDialog(QDialog):
 
 class TtresDialog(QDialog):
 
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -373,7 +377,6 @@ class TtresDialog(QDialog):
         self.setWindowIcon(my_icon)
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -390,6 +393,10 @@ class TtresDialog(QDialog):
         self.run_ttres_button.clicked.connect(self.run_ttres)
         self.input_layout.addWidget(self.run_ttres_button)
 
+        self.actualize_graph_button = QPushButton("Actualize Graph")
+        self.actualize_graph_button.clicked.connect(self.actualize_graph)
+        self.input_layout.addWidget(self.actualize_graph_button)
+
         self.input_layout.addWidget(self.statusbar)
 
         self.graph_img = QLabel()
@@ -398,7 +405,21 @@ class TtresDialog(QDialog):
 
         self.setLayout(self.layout)
 
+        self.actualize_graph()
+
+    def actualize_graph(self):
+        if 'tmp_ttres_ttres.png' in os.listdir("gui_tmp") :
+            pixmap = QPixmap("gui_tmp/tmp_ttres_ttres.png")
+            self.graph_img.setPixmap(
+                pixmap.scaled(pixmap.width() // 1.5, pixmap.height() // 1.5, Qt.AspectRatioMode.KeepAspectRatio))
+            self.graph_img.repaint()
+        else :
+            self.graph_img.clear()
+            self.graph_img.repaint()
+
+
     def run_ttres(self):
+        print("Running Ttres...")
         self.graph_img.clear()
         self.graph_img.repaint()
         if self.lat_selector.line_edit.text() == "" or self.TR_DEPTH_selector.line_edit.text() == "":
@@ -410,16 +431,17 @@ class TtresDialog(QDialog):
         TR_DEPTH = float(self.TR_DEPTH_selector.line_edit.text())
         path_ANT, path_PXP, path_SSP, path_OBS, proj_fold = self.l_path
 
-        self.jl.SeaGap.ttres(lat, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, fno="gui_tmp/tmp_ttres_ttres.out", fno0="gui_tmp/tmp_ttres_log.txt", save=True)
-        self.jl.SeaGap.plot_ttres(fn="gui_tmp/tmp_ttres_ttres.png", fn0="gui_tmp/tmp_ttres_ttres.out", show=False)
-        pixmap = QPixmap("gui_tmp/tmp_ttres_ttres.png")
-        self.graph_img.setPixmap(
-            pixmap.scaled(pixmap.width() // 1.5, pixmap.height() // 1.5, Qt.AspectRatioMode.KeepAspectRatio))
-        self.graph_img.repaint()
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+
+        proc = Process(target=ttres_proc, args=(lat, TR_DEPTH, path_ANT, path_PXP, path_SSP, path_OBS, "gui_tmp/tmp_ttres_ttres.out", "gui_tmp/tmp_ttres_log.txt"), kwargs={"proj_fold":proj_fold})
+        proc.start()
+
+
 
     def accept(self):
         try :
-            os.remove("gui_tmp/tmp_ttres_ttres.png")
+            # os.remove("gui_tmp/tmp_ttres_ttres.png")
             os.remove("gui_tmp/tmp_ttres_ttres.out")
             os.remove("gui_tmp/tmp_ttres_log.txt")
         except :
@@ -427,10 +449,10 @@ class TtresDialog(QDialog):
         super().accept()
 
     def reject(self):
-        try :
-            os.remove("gui_tmp/tmp_ttres_ttres.png")
-        except :
-            pass
+        # try :
+        #     os.remove("gui_tmp/tmp_ttres_ttres.png")
+        # except :
+        #     pass
         try :
             os.remove("gui_tmp/tmp_ttres_ttres.out")
         except :
@@ -440,6 +462,13 @@ class TtresDialog(QDialog):
         except :
             pass
         super().reject()
+
+
+
+
+# TAG1
+
+
 
 class MCMCGradVPlotDialog(QDialog):
 
@@ -679,7 +708,7 @@ class NTDMCMCGradVPlotDialog(QDialog):
 
 class StaticArrayDialog(QDialog):
 
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -688,7 +717,6 @@ class StaticArrayDialog(QDialog):
         self.setWindowIcon(my_icon)
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -738,7 +766,10 @@ class StaticArrayDialog(QDialog):
 
         self.setLayout(self.layout)
 
+    #TAG2
+
     def run_static_array(self):
+        print("Running static_array...")
         if self.lat_selector.line_edit.text() == "" or self.TR_DEPTH_selector.line_edit.text() == "" or self.folder_selector.line_edit.text() == "":
             print("lacking static array parameters")
             self.statusbar.showMessage("Lacking static array parameters")
@@ -769,15 +800,28 @@ class StaticArrayDialog(QDialog):
             delta_pos = float(self.delta_pos_selector.line_edit.text())
         else:
             delta_pos = 0.0001
-        log_path = os.path.join(folder_path, "static_array_log.out")
-        solve_path = os.path.join(folder_path, "static_array_solve.out")
-        position_path = os.path.join(folder_path, "static_array_position.out")
-        residual_path = os.path.join(folder_path, "static_array_residual.out")
-        bspline_path = os.path.join(folder_path, "static_array_bspline.out")
-        AICBIC_path = os.path.join(folder_path, "static_array_AICBIC.out")
-        self.jl.SeaGap.static_array(lat, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), NPB, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, eps=eps, ITMAX=ITMAX, delta_pos=delta_pos, fno0=log_path, fno1=solve_path, fno2=position_path, fno3=residual_path, fno4=bspline_path, fno5=AICBIC_path)
+
+        log_path =  os.path.relpath(os.path.join(folder_path, "static_array_log.out"), proj_fold).replace("\\", "/")
+        solve_path =  os.path.relpath(os.path.join(folder_path, "static_array_solve.out"), proj_fold).replace("\\", "/")
+        position_path =  os.path.relpath(os.path.join(folder_path, "static_array_position.out"), proj_fold).replace("\\", "/")
+        residual_path =  os.path.relpath(os.path.join(folder_path, "static_array_residual.out"), proj_fold).replace("\\", "/")
+        bspline_path =  os.path.relpath(os.path.join(folder_path, "static_array_bspline.out"), proj_fold).replace("\\", "/")
+        AICBIC_path =  os.path.relpath(os.path.join(folder_path, "static_array_AICBIC.out"), proj_fold).replace("\\", "/")
+
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+        proc = Process(target=static_array_proc, args=(lat, TR_DEPTH, NPB, path_ANT, path_PXP, path_SSP, path_OBS, eps, ITMAX, delta_pos, log_path, solve_path, position_path, residual_path, bspline_path, AICBIC_path), kwargs={"proj_fold": proj_fold})
+        proc.start()
+
+
+
+        # bspline_path = os.path.relpath(os.path.join(folder_path, "static_array_individual_bspline.out"), proj_fold).replace("\\", "/")
+
+        # self.jl.SeaGap.static_array(lat, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), NPB, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, eps=eps, ITMAX=ITMAX, delta_pos=delta_pos, fno0=log_path, fno1=solve_path, fno2=position_path, fno3=residual_path, fno4=bspline_path, fno5=AICBIC_path)
 
         self.buttonBox.setDisabled(False)
+
+
         
         
 class StaticArrayGradDialog(QDialog):
@@ -1185,15 +1229,15 @@ class StaticIndividualDialog(QDialog):
         self.layout.addLayout(self.input_layout)
         self.layout.addWidget(self.graph_img)
 
-        QBtn = (
-                QDialogButtonBox.Ok
-        )
-
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.setDisabled(True)
-        self.buttonBox.accepted.connect(self.accept)
-
-        self.input_layout.addWidget(self.buttonBox)
+        # QBtn = (
+        #         QDialogButtonBox.Ok
+        # )
+        #
+        # self.buttonBox = QDialogButtonBox(QBtn)
+        # self.buttonBox.setDisabled(True)
+        # self.buttonBox.accepted.connect(self.accept)
+        #
+        # self.input_layout.addWidget(self.buttonBox)
 
         self.setLayout(self.layout)
 
@@ -1236,12 +1280,8 @@ class StaticIndividualDialog(QDialog):
 
         path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
 
+        proc = Process(target=static_individual_proc, args=(lat, TR_DEPTH, NPB, path_ANT, path_PXP, path_SSP, path_OBS, eps, ITMAX, delta_pos, log_path, solve_path, position_path, residual_path, bspline_path), kwargs={"proj_fold":proj_fold})
+        proc.start()
 
-        client = docker.from_env()
-        cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(proj_fold)+":/app"])
-        _, stream = cont.exec_run('''julia -e 'using SeaGap;SeaGap.static_individual({0}, [{1}], {2}, fn1=\"{3}\", fn2=\"{4}\", fn3=\"{5}\", fn4=\"{6}\", eps={7}, ITMAX={8}, delta_pos={9}, fno0=\"{10}\", fno1=\"{11}\", fno2=\"{12}\", fno3=\"{13}\", fno4=\"{14}\")' '''.format(lat, TR_DEPTH, NPB, path_ANT, path_PXP, path_SSP, path_OBS, eps, ITMAX, delta_pos, log_path, solve_path, position_path, residual_path, bspline_path), stream=True)
-        for data in stream:
-            print(data.decode(), end='')
-        cont.stop()
-        # # self.jl.SeaGap.static_individual(lat, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), NPB, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, eps=eps, ITMAX=ITMAX, delta_pos=delta_pos, fno0=log_path, fno1=solve_path, fno2=position_path, fno3=residual_path, fno4=bspline_path)
-        self.buttonBox.setDisabled(False)
+#TAG3
+
