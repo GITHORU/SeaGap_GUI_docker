@@ -12,7 +12,7 @@ from GARPOS2SeaGap import GARPOS2SeaGap
 
 from multiprocessing import Process
 
-from customProcs import ttres_proc, static_array_proc, static_individual_proc
+from customProcs import ttres_proc, static_array_proc, static_individual_proc, static_array_grad_proc
 
 from time import time, sleep
 
@@ -826,7 +826,7 @@ class StaticArrayDialog(QDialog):
         
 class StaticArrayGradDialog(QDialog):
 
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -835,7 +835,6 @@ class StaticArrayGradDialog(QDialog):
         self.setWindowIcon(my_icon)
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -870,19 +869,22 @@ class StaticArrayGradDialog(QDialog):
         self.layout.addLayout(self.input_layout)
         self.layout.addWidget(self.graph_img)
 
-        QBtn = (
-                QDialogButtonBox.Ok
-        )
-
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.setDisabled(True)
-        self.buttonBox.accepted.connect(self.accept)
-
-        self.input_layout.addWidget(self.buttonBox)
+        # QBtn = (
+        #         QDialogButtonBox.Ok
+        # )
+        #
+        # self.buttonBox = QDialogButtonBox(QBtn)
+        # self.buttonBox.setDisabled(True)
+        # self.buttonBox.accepted.connect(self.accept)
+        #
+        # self.input_layout.addWidget(self.buttonBox)
 
         self.setLayout(self.layout)
 
+# TAG3
+
     def run_static_array_grad(self):
+        print("Running static_array_grad...")
         if self.lat_selector.line_edit.text() == "" or self.TR_DEPTH_selector.line_edit.text() == "" or self.folder_selector.line_edit.text() == "":
             print("lacking static array parameters")
             self.statusbar.showMessage("lacking static array parameters")
@@ -909,15 +911,23 @@ class StaticArrayGradDialog(QDialog):
             delta_pos = float(self.delta_pos_selector.line_edit.text())
         else:
             delta_pos = 0.0001
-        log_path = os.path.join(folder_path, "static_array_grad_log.out")
-        solve_path = os.path.join(folder_path, "static_array_grad_solve.out")
-        position_path = os.path.join(folder_path, "static_array_grad_position.out")
-        residual_path = os.path.join(folder_path, "static_array_grad_residual.out")
-        bspline_path = os.path.join(folder_path, "static_array_grad_bspline.out")
-        self.jl.SeaGap.static_array_grad(lat, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), NPB, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, ITMAX=ITMAX, delta_pos=delta_pos, fno0=log_path, fno1=solve_path, fno2=position_path, fno3=residual_path, fno4=bspline_path)
+        log_path = os.path.relpath(os.path.join(folder_path, "static_array_grad_log.out"), proj_fold).replace("\\", "/")
+        solve_path = os.path.relpath(os.path.join(folder_path, "static_array_grad_solve.out"), proj_fold).replace("\\", "/")
+        position_path = os.path.relpath(os.path.join(folder_path, "static_array_grad_position.out"), proj_fold).replace("\\", "/")
+        residual_path = os.path.relpath(os.path.join(folder_path, "static_array_grad_residual.out"), proj_fold).replace("\\", "/")
+        bspline_path = os.path.relpath(os.path.join(folder_path, "static_array_grad_bspline.out"), proj_fold).replace("\\", "/")
 
-        self.buttonBox.setDisabled(False)
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
 
+
+        proc = Process(target=static_array_grad_proc, args=(lat, TR_DEPTH, NPB, path_ANT, path_PXP, path_SSP, path_OBS, ITMAX, delta_pos, log_path, solve_path, position_path, residual_path, bspline_path), kwargs={"proj_fold": proj_fold})
+        proc.start()
+
+        # lat, TR_DEPTH, NPB, path_ANT, path_PXP, path_SSP, path_OBS, ITMAX, delta_pos, log_path, solve_path, position_path, residual_path, bspline_path
+
+        # self.jl.SeaGap.static_array_grad(lat, juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), NPB, fn1=path_ANT, fn2=path_PXP, fn3=path_SSP, fn4=path_OBS, ITMAX=ITMAX, delta_pos=delta_pos, fno0=log_path, fno1=solve_path, fno2=position_path, fno3=residual_path, fno4=bspline_path)
+
+        # self.buttonBox.setDisabled(False)
 
 
 class StaticArrayMCMCGradVDialog(QDialog):
@@ -1283,5 +1293,5 @@ class StaticIndividualDialog(QDialog):
         proc = Process(target=static_individual_proc, args=(lat, TR_DEPTH, NPB, path_ANT, path_PXP, path_SSP, path_OBS, eps, ITMAX, delta_pos, log_path, solve_path, position_path, residual_path, bspline_path), kwargs={"proj_fold":proj_fold})
         proc.start()
 
-#TAG3
+#TAG4
 

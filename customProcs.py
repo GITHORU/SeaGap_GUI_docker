@@ -20,6 +20,14 @@ def static_array_proc(*args, **kwargs):
         print(data.decode(), end='')
     cont.stop()
 
+def static_array_grad_proc(*args, **kwargs):
+    client = docker.from_env()
+    cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(kwargs["proj_fold"]) + ":/app"])
+    _, stream = cont.exec_run('''julia -e 'using SeaGap;SeaGap.static_array_grad({0}, [{1}], {2}, fn1=\"{3}\", fn2=\"{4}\", fn3=\"{5}\", fn4=\"{6}\", ITMAX={7}, delta_pos={8}, fno0=\"{9}\", fno1=\"{10}\", fno2=\"{11}\", fno3=\"{12}\", fno4=\"{13}\")' '''.format(*args), stream=True)
+    for data in stream:
+        print(data.decode(), end='')
+    cont.stop()
+
 def static_individual_proc(*args, **kwargs):
     client = docker.from_env()
     cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(kwargs["proj_fold"])+":/app"])
