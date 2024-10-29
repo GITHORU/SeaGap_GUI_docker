@@ -490,7 +490,7 @@ class TtresDialog(QDialog):
 
 class MCMCGradVPlotDialog(QDialog):
 
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -499,7 +499,6 @@ class MCMCGradVPlotDialog(QDialog):
         self.setWindowIcon(my_icon)
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -544,11 +543,16 @@ class MCMCGradVPlotDialog(QDialog):
 
         self.setLayout(self.layout)
 
+        client = docker.from_env()
+        self.cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(self.l_path[4]) + ":/app"])
+
+
+
     def run_mcmcgradv_plot(self):
-        self.graph_img1.clear()
-        self.graph_img1.repaint()
-        self.graph_img2.clear()
-        self.graph_img2.repaint()
+        # self.graph_img1.clear()
+        # self.graph_img1.repaint()
+        # self.graph_img2.clear()
+        # self.graph_img2.repaint()
         if self.folder_selector.line_edit.text() == "" and self.nshuffle_selector.line_edit.text() == "":
             print("Lacking folder")
             self.statusbar.showMessage("Lacking folder")
@@ -560,11 +564,22 @@ class MCMCGradVPlotDialog(QDialog):
             NA = 5
 
         path_ANT, path_PXP, path_SSP, path_OBS, proj_fold = self.l_path
-        mcmcgradv_folder = self.folder_selector.line_edit.text()
 
-        self.jl.SeaGap.plot_mcmcres_gradv(nshuffle=nshuffle, fn=join(mcmcgradv_folder, "static_array_mcmcgradv_mcmc.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_resfig.png")) #, fno="gui_tmp/test.png"
+        mcmcgradv_folder = os.path.relpath(self.folder_selector.line_edit.text(), proj_fold).replace("\\", "/")
 
-        self.jl.SeaGap.plot_mcmcparam_gradv(NA, nshuffle=nshuffle, fn=join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_paramfig.png")) #, fno="gui_tmp/test.png"
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+        l_params1 = [nshuffle, join(mcmcgradv_folder, "static_array_mcmcgradv_mcmc.out").replace("\\", "/"), join(mcmcgradv_folder, "static_array_mcmcgradv_resfig.png").replace("\\", "/")]
+        l_params2 = [NA, nshuffle, join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out").replace("\\", "/"), join(mcmcgradv_folder, "static_array_mcmcgradv_paramfig.png").replace("\\", "/")]
+        _, stream = self.cont.exec_run('''julia -e 'using SeaGap;
+        SeaGap.plot_mcmcres_gradv(nshuffle={0}, fn=\"{1}\", show=false, fno=\"{2}\"); '''.format(*l_params1)+
+        ''' SeaGap.plot_mcmcparam_gradv({0}, nshuffle={1}, fn=\"{2}\", show=false, fno=\"{3}\")' '''.format(*l_params2), stream=True)
+        for data in stream:
+            print(data.decode(), end='')
+
+        # self.jl.SeaGap.plot_mcmcres_gradv(nshuffle=nshuffle, fn=join(mcmcgradv_folder, "static_array_mcmcgradv_mcmc.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_resfig.png")) #, fno="gui_tmp/test.png"
+        #
+        # self.jl.SeaGap.plot_mcmcparam_gradv(NA, nshuffle=nshuffle, fn=join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_paramfig.png")) #, fno="gui_tmp/test.png"
 
         pixmap1 = QPixmap(join(mcmcgradv_folder, "static_array_mcmcgradv_resfig.png"))
         self.graph_img1.setPixmap(
