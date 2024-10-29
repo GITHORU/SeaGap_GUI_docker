@@ -602,7 +602,7 @@ class MCMCGradVPlotDialog(QDialog):
 
 class Histogram2DGradVPlotDialog(QDialog):
 
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -611,7 +611,6 @@ class Histogram2DGradVPlotDialog(QDialog):
         self.setWindowIcon(my_icon)
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -653,11 +652,14 @@ class Histogram2DGradVPlotDialog(QDialog):
 
         self.setLayout(self.layout)
 
+        client = docker.from_env()
+        self.cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(self.l_path[4]) + ":/app"])
+
     def run_histogram2dgradv_plot(self):
-        self.graph_img1.clear()
-        self.graph_img1.repaint()
-        self.graph_img2.clear()
-        self.graph_img2.repaint()
+        # self.graph_img1.clear()
+        # self.graph_img1.repaint()
+        # self.graph_img2.clear()
+        # self.graph_img2.repaint()
         if self.folder_selector.line_edit.text() == "" and self.nshuffle_selector.line_edit.text() == "":
             print("Lacking parameters")
             self.statusbar.showMessage("Lacking parameters")
@@ -665,21 +667,50 @@ class Histogram2DGradVPlotDialog(QDialog):
         nshuffle = int(self.nshuffle_selector.line_edit.text())
 
         path_ANT, path_PXP, path_SSP, path_OBS, proj_fold = self.l_path
-        mcmcgradv_folder = self.folder_selector.line_edit.text()
 
-        self.jl.SeaGap.plot_histogram2d_gradv(nshuffle=nshuffle, fn=join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_hist2dfig.png"))
+        mcmcgradv_folder = os.path.relpath(self.folder_selector.line_edit.text(), proj_fold).replace("\\", "/")
+
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+        l_params1 = [nshuffle, join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out").replace("\\", "/"), join(mcmcgradv_folder, "static_array_mcmcgradv_hist2dfig.png").replace("\\", "/")]
+        l_params2 = [join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out").replace("\\", "/"), join(mcmcgradv_folder, "static_array_mcmcgradv_corrfig.png").replace("\\", "/")]
+
+        _, stream = self.cont.exec_run(
+            '''julia -e 'using SeaGap; SeaGap.plot_histogram2d_gradv(nshuffle={0}, fn=\"{1}\", show=false, fno=\"{2}\")' '''.format(*l_params1) +
+            '''julia -e 'using SeaGap; SeaGap.plot_cormap_gradv(fn=\"{0}\", show=false, fno=\"{1}\")' '''.format(*l_params2)
+            , stream=True)
+        for data in stream:
+            print(data.decode(), end='')
 
         pixmap1 = QPixmap(join(mcmcgradv_folder, "static_array_mcmcgradv_hist2dfig.png"))
         self.graph_img1.setPixmap(
             pixmap1.scaled(pixmap1.width() // 1, pixmap1.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
         self.graph_img1.repaint()
 
-        self.jl.SeaGap.plot_cormap_gradv(fn=join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_corrfig.png"))
-
         pixmap2 = QPixmap(join(mcmcgradv_folder, "static_array_mcmcgradv_corrfig.png"))
         self.graph_img2.setPixmap(
             pixmap2.scaled(pixmap2.width() // 1, pixmap2.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
         self.graph_img2.repaint()
+
+
+        # self.jl.SeaGap.plot_histogram2d_gradv(nshuffle=nshuffle, fn=join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_hist2dfig.png"))
+        #
+        #
+        #
+        # self.jl.SeaGap.plot_cormap_gradv(fn=join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_corrfig.png"))
+        #
+        # pixmap2 = QPixmap(join(mcmcgradv_folder, "static_array_mcmcgradv_corrfig.png"))
+        # self.graph_img2.setPixmap(
+        #     pixmap2.scaled(pixmap2.width() // 1, pixmap2.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
+        # self.graph_img2.repaint()
+
+    def accept(self):
+        self.cont.stop(timeout=0)
+        super().accept()
+
+    def reject(self):
+        self.cont.stop(timeout=0)
+        super().reject()
 
 
 class NTDMCMCGradVPlotDialog(QDialog):
