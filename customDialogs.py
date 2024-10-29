@@ -4,6 +4,7 @@ from customLayout import DoubleSelector, IntSelector, FolderExplorerLayout, File
 from PySide6.QtGui import QIcon, QPixmap
 import shutil, os
 from PySide6.QtCore import Qt
+import docker
 
 
 from os.path import exists, join
@@ -181,7 +182,7 @@ class TimeTrackPlotDialog(QDialog):
 
 class DenoiseDialog(QDialog):
     
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -192,7 +193,6 @@ class DenoiseDialog(QDialog):
         self.first_denoise = True
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -236,6 +236,11 @@ class DenoiseDialog(QDialog):
 
         self.setLayout(self.layout)
 
+        client = docker.from_env()
+        self.cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(self.l_path[4]) + ":/app"])
+
+#TAG
+
     def run_denoise(self):
         self.graph_img.clear()
         self.graph_img.repaint()
@@ -264,12 +269,45 @@ class DenoiseDialog(QDialog):
             sigma = float(self.sigma_selector.line_edit.text())
         else :
             sigma = 4.0
-        self.jl.SeaGap.denoise(lat,juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), fn1=path_ANT , fn2=path_PXP , fn3=path_SSP , fn4=path_OBS, fno1="gui_tmp/tmp_denoise.out", fno2="gui_tmp/tmp_denoise.png", save=False, show=False, prompt=False, n=n, sigma=sigma, k=k)
+
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+
+        l_params = [lat, TR_DEPTH, path_ANT, path_PXP, path_SSP, path_OBS, "gui_tmp/tmp_denoise.out", "gui_tmp/tmp_denoise.png", n, sigma, k]
+        _, stream = self.cont.exec_run('''julia -e 'using SeaGap;SeaGap.denoise({0}, [{1}], fn1=\"{2}\", fn2=\"{3}\", fn3=\"{4}\", fn4=\"{5}\", fno1=\"{6}\", fno2=\"{7}\", n={8}, sigma={9}, k={10}, save=false, show=false, prompt=false)' '''.format(*l_params), stream=True)
+        for data in stream:
+            print(data.decode(), end='')
+
+        # self.jl.SeaGap.denoise(lat,juliacall.convert(self.jl.Vector[self.jl.Float64], [TR_DEPTH]), fn1=path_ANT , fn2=path_PXP , fn3=path_SSP , fn4=path_OBS, fno1="gui_tmp/tmp_denoise.out", fno2="gui_tmp/tmp_denoise.png", save=False, show=False, prompt=False, n=n, sigma=sigma, k=k)
         pixmap = QPixmap('gui_tmp/tmp_denoise.png')
         self.graph_img.setPixmap(pixmap.scaled(pixmap.width()//2, pixmap.height()//2, Qt.AspectRatioMode.KeepAspectRatio ))
         self.graph_img.repaint()
 
         self.buttonBox.setDisabled(False)
+
+
+    def accept(self):
+        try :
+            shutil.copyfile("gui_tmp/tmp_denoise_obs.inp", self.path_OBS_ori)
+            os.remove("gui_tmp/tmp_denoise_obs.inp")
+            os.remove("gui_tmp/tmp_denoise.out")
+            os.remove("gui_tmp/tmp_denoise.png")
+        except :
+            pass
+
+        self.cont.stop(timeout=0)
+        super().accept()
+
+    def reject(self):
+        try :
+            os.remove("gui_tmp/tmp_denoise_obs.inp")
+            os.remove("gui_tmp/tmp_denoise.out")
+            os.remove("gui_tmp/tmp_denoise.png")
+        except :
+            pass
+
+        self.cont.stop(timeout=0)
+        super().reject()
 
 class FromGARPOSDialog(QDialog):
 
@@ -343,27 +381,6 @@ class FromGARPOSDialog(QDialog):
 
         GARPOS2SeaGap(path_OBS, path_SVP, path_INI, path_SG_PXP, path_SG_OBS, path_SG_SSP, path_SG_ANT, split_sets=self.split_radio.isChecked())
         self.buttonBox.setDisabled(False)
-
-
-
-    def accept(self):
-        try :
-            shutil.copyfile("gui_tmp/tmp_denoise_obs.inp", self.path_OBS_ori)
-            os.remove("gui_tmp/tmp_denoise_obs.inp")
-            os.remove("gui_tmp/tmp_denoise.out")
-            os.remove("gui_tmp/tmp_denoise.png")
-        except :
-            pass
-        super().accept()
-
-    def reject(self):
-        try :
-            os.remove("gui_tmp/tmp_denoise_obs.inp")
-            os.remove("gui_tmp/tmp_denoise.out")
-            os.remove("gui_tmp/tmp_denoise.png")
-        except :
-            pass
-        super().reject()
 
 
 class TtresDialog(QDialog):
