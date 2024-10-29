@@ -9,6 +9,8 @@ from customDialogs import DenoiseDialog, StaticArrayDialog, StaticArrayGradDialo
     StaticIndividualDialog, NewProjectDialog, TtresDialog, MCMCGradVPlotDialog, NTDMCMCGradVPlotDialog, FromGARPOSDialog, TrackPlotDialog, TimeTrackPlotDialog, GradmapDialog, Histogram2DGradVPlotDialog
 from customLayout import FileExplorerLayout
 
+import docker
+
 
 
 def is_path_list_valid(path_list):
@@ -128,13 +130,13 @@ class MainWindow(QMainWindow):
         self.ttres_Button.clicked.connect(self.run_ttres_dlg)
         self.plotting_tab_layout.addWidget(self.ttres_Button)
 
-        # self.track_Button = QPushButton("Track")
-        # self.track_Button.clicked.connect(self.show_track_window)
-        # self.plotting_tab_layout.addWidget(self.track_Button)
+        self.track_Button = QPushButton("Track")
+        self.track_Button.clicked.connect(self.show_track_window)
+        self.plotting_tab_layout.addWidget(self.track_Button)
 
-        # self.timetrack_Button = QPushButton("Time track")
-        # self.timetrack_Button.clicked.connect(self.show_timetrack_window)
-        # self.plotting_tab_layout.addWidget(self.timetrack_Button)
+        self.timetrack_Button = QPushButton("Time track")
+        self.timetrack_Button.clicked.connect(self.show_timetrack_window)
+        self.plotting_tab_layout.addWidget(self.timetrack_Button)
 
         self.mcmcgradvplot_Button = QPushButton("MCMC Grad V plot")
         self.mcmcgradvplot_Button.clicked.connect(self.run_mcmcgradvplot_dlg)
@@ -322,17 +324,28 @@ class MainWindow(QMainWindow):
         ntdmcmcgradvplot_dlg = NTDMCMCGradVPlotDialog(l_path)
         ntdmcmcgradvplot_dlg.exec()
 
-    # def show_track_window(self):
-    #     l_path = self.get_path_list()
-    #     if not is_path_list_valid(l_path):
-    #         self.status_bar.showMessage("Paths not valid")
-    #         print("Paths not valid")
-    #         return
-    #     path_ANT, path_PXP, path_SSP, path_OBS = l_path
-    #     jl.SeaGap.plot_track(fn1=path_PXP, fn2=path_OBS, fno="gui_tmp/track.png")
-    #
-    #     track_plot_dlg = TrackPlotDialog()
-    #     track_plot_dlg.exec()
+    def show_track_window(self):
+        print("Creating track fig")
+        l_path = self.get_path_list()
+        if not is_path_list_valid(l_path):
+            self.status_bar.showMessage("Paths not valid")
+            print("Paths not valid")
+            return
+        path_ANT, path_PXP, path_SSP, path_OBS, proj_fold = l_path
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+        client = docker.from_env()
+        cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(proj_fold) + ":/app"])
+        l_params = [path_PXP, path_OBS, "gui_tmp/track.png"]
+        _, stream = cont.exec_run('''julia -e 'using SeaGap;SeaGap.plot_track(fn1=\"{0}\", fn2=\"{1}\", fno=\"{2}\")' '''.format(*l_params), stream=True)
+        for data in stream:
+            print(data.decode(), end='')
+        cont.stop(timeout=0)
+
+        # jl.SeaGap.plot_track(fn1=path_PXP, fn2=path_OBS, fno="gui_tmp/track.png")
+
+        track_plot_dlg = TrackPlotDialog()
+        track_plot_dlg.exec()
 
 
 
@@ -345,17 +358,27 @@ class MainWindow(QMainWindow):
         gradmap_dlg = GradmapDialog(l_path)
         gradmap_dlg.exec()
 
-    # def show_timetrack_window(self):
-    #     l_path = self.get_path_list()
-    #     if not is_path_list_valid(l_path):
-    #         self.status_bar.showMessage("Paths not valid")
-    #         print("Paths not valid")
-    #         return
-    #     path_ANT, path_PXP, path_SSP, path_OBS = l_path
-    #     jl.SeaGap.plot_timetrack(fn=path_OBS, fno="gui_tmp/time_track.png")
-    #
-    #     track_plot_dlg = TimeTrackPlotDialog()
-    #     track_plot_dlg.exec()
+    def show_timetrack_window(self):
+        print("Creating time track fig")
+        l_path = self.get_path_list()
+        if not is_path_list_valid(l_path):
+            self.status_bar.showMessage("Paths not valid")
+            print("Paths not valid")
+            return
+        path_ANT, path_PXP, path_SSP, path_OBS, proj_fold = l_path
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+        client = docker.from_env()
+        cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(proj_fold) + ":/app"])
+        l_params = [path_OBS, "gui_tmp/time_track.png"]
+        _, stream = cont.exec_run('''julia -e 'using SeaGap;SeaGap.plot_timetrack(fn=\"{0}\", fno=\"{1}\")' '''.format(*l_params), stream=True)
+        for data in stream:
+            print(data.decode(), end='')
+        cont.stop(timeout=0)
+        # jl.SeaGap.plot_timetrack(fn=path_OBS, fno="gui_tmp/time_track.png")
+
+        track_plot_dlg = TimeTrackPlotDialog()
+        track_plot_dlg.exec()
 
 
     def run_static_array_grad_dlg(self):
