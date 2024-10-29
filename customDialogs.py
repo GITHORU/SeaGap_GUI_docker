@@ -98,7 +98,7 @@ class TrackPlotDialog(QDialog):
         self.setLayout(self.layout)
 
 class GradmapDialog(QDialog):
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -107,7 +107,6 @@ class GradmapDialog(QDialog):
         self.setWindowIcon(my_icon)
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -127,7 +126,7 @@ class GradmapDialog(QDialog):
 
         self.layout.addLayout(self.fig_layout)
 
-        self.run_gradmap_plot_button = QPushButton("Run NTD MCMC Grad V plot")
+        self.run_gradmap_plot_button = QPushButton("Run Gradmap plot")
         self.run_gradmap_plot_button.clicked.connect(self.run_gradmap_plot)
         self.input_layout.addWidget(self.run_gradmap_plot_button)
 
@@ -143,6 +142,11 @@ class GradmapDialog(QDialog):
 
         self.setLayout(self.layout)
 
+        client = docker.from_env()
+        self.cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(self.l_path[4]) + ":/app"])
+
+#TAGTAG
+
     def run_gradmap_plot(self):
         self.graph_img1.clear()
         self.graph_img1.repaint()
@@ -152,14 +156,32 @@ class GradmapDialog(QDialog):
             return
 
         path_ANT, path_PXP, path_SSP, path_OBS, proj_fold = self.l_path
-        mcmcgradv_folder = self.folder_selector.line_edit.text()
 
-        self.jl.SeaGap.plot_gradmap_gradv(fn1=path_PXP, fn2=join(mcmcgradv_folder, "static_array_mcmcgradv_residual.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_gradmap.png"))
+        mcmcgradv_folder = os.path.relpath(self.folder_selector.line_edit.text(), proj_fold).replace("\\", "/")
+
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+
+        l_params = [path_PXP, join(mcmcgradv_folder, "static_array_mcmcgradv_residual.out").replace("\\", "/"), join(mcmcgradv_folder, "static_array_mcmcgradv_gradmap.png").replace("\\", "/")]
+
+        _, stream = self.cont.exec_run('''julia -e 'using SeaGap; SeaGap.plot_gradmap_gradv(fn1=\"{0}\", fn2=\"{1}\", show=false, fno=\"{2}\")' '''.format(*l_params), stream=True)
+        for data in stream:
+            print(data.decode(), end='')
+
+        # self.jl.SeaGap.plot_gradmap_gradv(fn1=path_PXP, fn2=join(mcmcgradv_folder, "static_array_mcmcgradv_residual.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_gradmap.png"))
 
         pixmap1 = QPixmap(join(mcmcgradv_folder, "static_array_mcmcgradv_gradmap.png"))
         self.graph_img1.setPixmap(
             pixmap1.scaled(pixmap1.width() // 1, pixmap1.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
         self.graph_img1.repaint()
+
+    def accept(self):
+        self.cont.stop(timeout=0)
+        super().accept()
+
+    def reject(self):
+        self.cont.stop(timeout=0)
+        super().reject()
 
 class TimeTrackPlotDialog(QDialog):
     def __init__(self):
@@ -712,7 +734,7 @@ class Histogram2DGradVPlotDialog(QDialog):
         self.cont.stop(timeout=0)
         super().reject()
 
-
+#TAGTAG
 class NTDMCMCGradVPlotDialog(QDialog):
 
     def __init__(self, l_path):
