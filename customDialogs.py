@@ -591,6 +591,14 @@ class MCMCGradVPlotDialog(QDialog):
             pixmap2.scaled(pixmap2.width() // 1, pixmap2.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
         self.graph_img2.repaint()
 
+    def accept(self):
+        self.cont.stop(timeout=0)
+        super().accept()
+
+    def reject(self):
+        self.cont.stop(timeout=0)
+        super().reject()
+
 
 class Histogram2DGradVPlotDialog(QDialog):
 
