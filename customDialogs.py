@@ -676,8 +676,8 @@ class Histogram2DGradVPlotDialog(QDialog):
         l_params2 = [join(mcmcgradv_folder, "static_array_mcmcgradv_sample.out").replace("\\", "/"), join(mcmcgradv_folder, "static_array_mcmcgradv_corrfig.png").replace("\\", "/")]
 
         _, stream = self.cont.exec_run(
-            '''julia -e 'using SeaGap; SeaGap.plot_histogram2d_gradv(nshuffle={0}, fn=\"{1}\", show=false, fno=\"{2}\")' '''.format(*l_params1) +
-            '''julia -e 'using SeaGap; SeaGap.plot_cormap_gradv(fn=\"{0}\", show=false, fno=\"{1}\")' '''.format(*l_params2)
+            '''julia -e 'using SeaGap; SeaGap.plot_histogram2d_gradv(nshuffle={0}, fn=\"{1}\", show=false, fno=\"{2}\");'''.format(*l_params1) +
+            '''SeaGap.plot_cormap_gradv(fn=\"{0}\", show=false, fno=\"{1}\")' '''.format(*l_params2)
             , stream=True)
         for data in stream:
             print(data.decode(), end='')
@@ -715,7 +715,7 @@ class Histogram2DGradVPlotDialog(QDialog):
 
 class NTDMCMCGradVPlotDialog(QDialog):
 
-    def __init__(self, l_path, jl):
+    def __init__(self, l_path):
         super().__init__()
 
         self.statusbar = QStatusBar(self)
@@ -724,7 +724,6 @@ class NTDMCMCGradVPlotDialog(QDialog):
         self.setWindowIcon(my_icon)
 
         self.l_path = l_path
-        self.jl = jl
 
         self.layout = QHBoxLayout()
 
@@ -760,23 +759,44 @@ class NTDMCMCGradVPlotDialog(QDialog):
 
         self.setLayout(self.layout)
 
+        client = docker.from_env()
+        self.cont = client.containers.run("githoru/seagap_docker_img", "sleep infinity", auto_remove=True, detach=True, volumes=[os.path.normpath(self.l_path[4]) + ":/app"])
+
     def run_ntdmcmcgradv_plot(self):
-        self.graph_img1.clear()
-        self.graph_img1.repaint()
+        # self.graph_img1.clear()
+        # self.graph_img1.repaint()
         if self.folder_selector.line_edit.text() == "" :
             print("Lacking folder")
             self.statusbar.showMessage("Lacking folder")
             return
 
         path_ANT, path_PXP, path_SSP, path_OBS, proj_fold = self.l_path
-        mcmcgradv_folder = self.folder_selector.line_edit.text()
 
-        self.jl.SeaGap.plot_ntd_gradv(fn=join(mcmcgradv_folder, "static_array_mcmcgradv_residual.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_ntdfig.png"))
+        mcmcgradv_folder = os.path.relpath(self.folder_selector.line_edit.text(), proj_fold).replace("\\", "/")
+
+        path_ANT, path_PXP, path_SSP, path_OBS = os.path.relpath(path_ANT).replace("\\", "/"), os.path.relpath(path_PXP).replace("\\", "/"), os.path.relpath(path_SSP).replace("\\", "/"), os.path.relpath(path_OBS).replace("\\", "/")
+
+
+        l_params = [join(mcmcgradv_folder, "static_array_mcmcgradv_residual.out").replace("\\", "/"), join(mcmcgradv_folder, "static_array_mcmcgradv_ntdfig.png").replace("\\", "/")]
+
+        _, stream = self.cont.exec_run('''julia -e 'using SeaGap; SeaGap.plot_ntd_gradv(fn=\"{0}\", show=false, fno=\"{1}\")' '''.format(*l_params), stream=True)
+        for data in stream:
+            print(data.decode(), end='')
+
+        # self.jl.SeaGap.plot_ntd_gradv(fn=join(mcmcgradv_folder, "static_array_mcmcgradv_residual.out"), show=False, fno=join(mcmcgradv_folder, "static_array_mcmcgradv_ntdfig.png"))
 
         pixmap1 = QPixmap(join(mcmcgradv_folder, "static_array_mcmcgradv_ntdfig.png"))
         self.graph_img1.setPixmap(
             pixmap1.scaled(pixmap1.width() // 1, pixmap1.height() // 1, Qt.AspectRatioMode.KeepAspectRatio))
         self.graph_img1.repaint()
+
+    def accept(self):
+        self.cont.stop(timeout=0)
+        super().accept()
+
+    def reject(self):
+        self.cont.stop(timeout=0)
+        super().reject()
 
 class StaticArrayDialog(QDialog):
 
