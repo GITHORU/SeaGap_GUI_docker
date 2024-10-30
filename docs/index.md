@@ -1,28 +1,17 @@
- <!DOCTYPE html>
-<html>
-<head>
-  <title>A Meaningful Page Title</title>
-</head>
-<body>
-
 <p align="center">
 　<img src="https://github.com/GITHORU/SeaGap_GUI_docker/blob/main/img/seagap_docker_GUI.png" width="200">
 </p>
 
-<h1>
   # SeaGap Docker GUI
-</h1>
- <p>
+
 This repo contains a GUI for simplifying the usage of F. Tomita's GNSS/A software : SeaGap ! This software, written in Julia, allows to use all the state-of-the-art GNSS/A calculation methods and has been explained in Tomita's 2024 article. 
 - [SeaGap repo](https://github.com/f-tommy/SeaGap)
 - [SeaGap's documentation](https://f-tommy.github.io/SeaGapDocs/)
 - [Tomita's 2024 article](https://earth-planets-space.springeropen.com/articles/10.1186/s40623-024-01987-9)
-</p>
-<p>
+
 This repos is meant to increase SeaGap portability by both creating a Docker image and creating a Windows/Linux-friendly GUI, allowing to get rid of Julia’s dependency issues. It also aims at simplifying its usage for users that are not used to Julia at therefore reduce the technological gap between GARPOS, Gnatss and SeaGap. This effort for the unification of GNSS/A treatments is also carried out by the implementation of a GARPOS to SeaGap data converter, allowing the usage of GARPOS datasets with SeaGap.
 - [Docker image from DockerHub](https://hub.docker.com/r/githoru/seagap_docker_img)
 - [GARPOS dataset](https://zenodo.org/records/3993912)
-</p>
 
 ## Installation
 ### Docker
