@@ -86,10 +86,6 @@ Docker is explicitly made to counter those issues :
 - 4 : With one image, you can create and parallelly run as many containers as you like. Meaning, you can manage parallel runs of multiple SeaGap functions without any multithreading issues.
 
 
-</body>
-</html> 
-
-
 
 
 
