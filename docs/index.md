@@ -1,5 +1,3 @@
-@def title = "SeaGap Documents"
-
 <p align="center">
 　<img src="https://github.com/GITHORU/SeaGap_GUI_docker/blob/main/img/seagap_docker_GUI.png" width="200">
 </p>
