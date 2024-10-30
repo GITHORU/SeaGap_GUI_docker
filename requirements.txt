@@ -13,3 +13,5 @@ shiboken6==6.7.1
 six==1.16.0
 tzdata==2024.2
 docker==7.1.0
+pyinstaller==6.11.0
+

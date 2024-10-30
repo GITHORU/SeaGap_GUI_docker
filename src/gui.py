@@ -168,7 +168,7 @@ class MainWindow(QMainWindow):
     ### FINAL DETAILS ###
 
         # Définition du titre de la fenêtre
-        self.setWindowTitle("SeaGap - GUI")
+        self.setWindowTitle("SeaGap Docker GUI")
 
         my_icon = QIcon("./img/logo.png")
 
