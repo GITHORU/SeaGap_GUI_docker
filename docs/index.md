@@ -60,7 +60,7 @@ pip install -r requirements.txt
 ```
 
 ### Running
-With the python of env of your choice activated, as long as the dependencies are correctly installed, you can now run the GUI by typing :
+With the python of env of your choice activated, as long as the dependencies are correctly installed, you can now run the GUI from the src folder by typing :
 ```
 python gui.py
 ```
