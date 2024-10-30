@@ -1,5 +1,5 @@
 <p align="center">
-　<img src="https://github.com/GITHORU/SeaGap_GUI_docker/blob/main/img/seagap_docker_GUI.png" width="200">
+　<img src="https://github.com/GITHORU/SeaGap_GUI_docker/blob/main/img/seagap_docker_IMG.png?raw=true" width="200">
 </p>
 
   # SeaGap Docker GUI
