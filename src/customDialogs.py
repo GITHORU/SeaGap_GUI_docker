@@ -76,6 +76,8 @@ class NewProjectDialog(QDialog):
             prj_file.write('SSP_path : "'+'"\n')
             prj_file.write('OBS_path : "'+'"\n')
         os.makedirs(join(proj_path, "gui_tmp"))
+        os.makedirs(join(proj_path, "img"))
+        shutil.copy("./img/logo.png", join(proj_path, "img/logo.png"))
         self.proj_file_path = join(proj_path, proj_name+".prj")
 
 
