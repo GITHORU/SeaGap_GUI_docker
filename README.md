@@ -64,3 +64,23 @@ With the python of env of your choice activated, as long as the dependencies are
 ```
 python gui.py
 ```
+
+## Why Docker
+
+There are four main issues with Julia :
+- 1 : The way Julia packages are installed requires a long installation time for the first install
+  
+- 2 : Julia’s import is system specific and sometimes needs deep knowledge to debug the installation. It can also randomly stop functioning because of a dependecy update
+  
+- 3 : The way Julia packages are installed needs a long precompilation at each startup, which lower the interest of speeding the processes
+  
+- 4 : Embedding Julia in a python GUI is difficult and is not compatible with running multiple functions in parallel
+
+Docker is explicitly made to counter those issues :
+- 1 : The use of an image means that the installation is done only once (by the Docker image owner, which means me), and is transparent to the user
+  
+- 2 : Julia is contained in a fixed system, in our case a debian system, and its dependencies are therefore fixed and functioning. Which means no random upgrade can occur and no system specific debugging is needed
+  
+- 3 : SeaGap precompilation is already made at build, which means the user can directly run "using SeaGap" without any precompilation, at any time.
+  
+- 4 : With one image, you can create and parallelly run as many containers as you like. Meaning, you can manage parallel runs of multiple SeaGap functions without any multithreading issues.
