@@ -1,8 +1,8 @@
 <p align="center">
-　<img src="https://github.com/GITHORU/SeaGap_GUI_docker/blob/main/img/seagap_docker_IMG.png?raw=true" width="200">
+　<img src="/SeaGap_GUI_docker/img/logo.png" width="200">
 </p>
 
-  # SeaGap Docker GUI
+# SeaGap Docker GUI
 
 This repo contains a GUI for simplifying the usage of F. Tomita's GNSS/A software : SeaGap ! This software, written in Julia, allows to use all the state-of-the-art GNSS/A calculation methods and has been explained in Tomita's 2024 article. 
 - [SeaGap repo](https://github.com/f-tommy/SeaGap)
