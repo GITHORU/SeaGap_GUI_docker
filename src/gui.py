@@ -1,5 +1,6 @@
 import sys
 from os.path import exists, join
+import multiprocessing
 
 import yaml, os
 
@@ -428,6 +429,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     # jl.println("Hello from Julia!")
 
     # z, v, nz_st, numz = jl.SeaGap.read_prof("../data/ss_prof.inp",3.0)
