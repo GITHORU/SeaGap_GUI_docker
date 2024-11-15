@@ -26,7 +26,7 @@ Docker is used to create images and containers. Images are templates for creatin
 For the GUI to work, you need to install Docker. To do so, follow the procedure explained on the Docker website :
 - [For Windows](https://docs.docker.com/desktop/install/windows-install/)
 - [For MacOs](https://docs.docker.com/desktop/install/mac-install/)
-- [For Linux](https://docs.docker.com/engine/install/) (Specifically for Ubuntu, the "apt" methods explained [here](https://docs.docker.com/engine/install/binaries/) works)
+- [For Linux](https://docs.docker.com/engine/install/) (Specifically for Ubuntu, the "apt" methods explained [here](https://docs.docker.com/engine/install/ubuntu/) works)
 
 Once docker is correctly installed, you will be able to pull SeaGap_docker_img image by running :
 ```
